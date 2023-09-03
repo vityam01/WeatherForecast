@@ -2,7 +2,7 @@
 //  AppDelegate.swift
 //  WeatherForecast
 //
-//  Created by Elena on 10.01.2021.
+//  Created by Vitya Mandryk on 01.09.2023.
 //
 
 import UIKit
@@ -11,13 +11,8 @@ import GooglePlaces
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
-
-
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         GMSPlacesClient.provideAPIKey(APIKeys.googlePlacesKey)
-        
-    
-        
         return true
     }
 

@@ -2,7 +2,7 @@
 //  oneCallModel.swift
 //  WeatherForecast
 //
-//  Created by Elena on 05.02.2021.
+//  Created by Vitya Mandryk on 01.09.2023.
 //
 
 // This file was generated from JSON Schema using quicktype, do not modify it directly.

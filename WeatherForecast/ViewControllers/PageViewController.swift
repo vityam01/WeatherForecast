@@ -2,7 +2,7 @@
 //  PageViewController.swift
 //  WeatherForecast
 //
-//  Created by Elena on 04.02.2021.
+//  Created by Vitya Mandryk on 01.09.2023.
 //
 
 import UIKit
@@ -11,6 +11,8 @@ class PageViewController: UIPageViewController {
     
     var weatherLocations: [WeatherLocation] = []
     
+    
+    //MARK: viewDidLoad
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -21,7 +23,7 @@ class PageViewController: UIPageViewController {
         setViewControllers([createLocationDetailViewController(forPage: 0)], direction: .forward, animated: false, completion: nil)
     }
     
-    func loadData() {
+    private func loadData() {
         guard let locationsEncoded = UserDefaults.standard.value(forKey: "WeatherLocationsListKey") as? Data else {
             print("ERROR!: Could not load weatherLocations Data from UserDefaults. This would always be the case the first time an app installed^ so if thats the case, ignore this error.")
             //TODO: Get User Location for the first element in weatherLocations
@@ -37,7 +39,6 @@ class PageViewController: UIPageViewController {
         
         }
         if weatherLocations.isEmpty {
-            //TODO: Get User Location for the first element in weatherLocations
             weatherLocations.append(WeatherLocation(name: "", tempC: "", locationTime: "", latitude: 20.20, longitude: 20.20))
         }
     }
@@ -50,6 +51,8 @@ class PageViewController: UIPageViewController {
     }
 }
 
+
+//MARK: UIPageViewControllerDelegate, UIPageViewControllerDataSource
 extension PageViewController: UIPageViewControllerDelegate, UIPageViewControllerDataSource {
     
     func pageViewController(_ pageViewController: UIPageViewController, viewControllerBefore viewController: UIViewController) -> UIViewController? {

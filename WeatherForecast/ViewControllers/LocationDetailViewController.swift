@@ -2,36 +2,35 @@
 //  LocationDetailViewController.swift
 //  WeatherForecast
 //
-//  Created by Elena on 03.02.2021.
+//  Created by Vitya Mandryk on 01.09.2023.
 //
-// контролер
-//import Foundation
+
 import UIKit
 import CoreLocation
 
-private let dateFormatter: DateFormatter = {
-    let dateFormatter = DateFormatter()
-    dateFormatter.dateFormat = "EEEE, MMM d, h:mm aaa"
-    return dateFormatter
-}()
+
 
 class LocationDetailViewController: UIViewController {
     
+    //MARK: @IBOutlets
+    @IBOutlet private weak var table: UITableView!
+    @IBOutlet private weak var scrollViewTable: UICollectionView!
+    @IBOutlet private weak var cityLable: UILabel!
+    @IBOutlet private weak var conditionLabel: UILabel!
+    @IBOutlet private weak var temperatureLabel: UILabel!
+    @IBOutlet private weak var timeAndDataLabel: UILabel!
+    @IBOutlet private weak var backgroundWeatherPicture: UIImageView!
     
-    @IBOutlet weak var table: UITableView!
-    @IBOutlet weak var scrollViewTable: UICollectionView!
-    @IBOutlet weak var cityLable: UILabel!
-    @IBOutlet weak var conditionLabel: UILabel!
-    @IBOutlet weak var temperatureLabel: UILabel!
-    @IBOutlet weak var timeAndDataLabel: UILabel!
-    @IBOutlet weak var backgroundWeatherPicture: UIImageView!
-    @IBOutlet weak var pageControl: UIPageControl!
     
-    weak var pageController: PageViewController?
+    //MARK: Variables
     var locationManager: CLLocationManager!
     var locationIndex = 0
-    var weatherService: WeatherService!
+    weak var pageController: PageViewController?
+    private var weatherService: WeatherService!
+    private var appTool = APPHelper()
     
+    
+    //MARK: viewDidLoad
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -47,10 +46,20 @@ class LocationDetailViewController: UIViewController {
         requestWeatherForLocation()
     }
     
+    
+    //MARK: viewWillAppear
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        requestWeatherForLocation()
+    }
+    
+    //MARK: viewDidAppear
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
     }
     
+    
+    //MARK: prepare(for segue)
     override func prepare(for segue: UIStoryboardSegue, sender: Any?){
         if segue.identifier == "ShowList" {
             let destination = segue.destination as! OpenWeatherController
@@ -58,32 +67,31 @@ class LocationDetailViewController: UIViewController {
             
                 destination.weatherLocations = pageViewController.weatherLocations
             }
+        } else if segue.identifier == "ShowMapFinder" {
+            if let locationSelectionVC = segue.destination as? LocationSelectionViewController {
+                locationSelectionVC.delegate = self
+            }
         }
     }
     
-    @IBAction func unwindFromOpenWeatherController (segue: UIStoryboardSegue) {
-        let source = segue.source as! OpenWeatherController
-        locationIndex = source.selectedLocationIndex
-        
-        let pageViewController = UIApplication.shared.windows.first!.rootViewController as! PageViewController
-        
-        pageViewController.weatherLocations = source.weatherLocations
-        pageViewController.setViewControllers([pageViewController.createLocationDetailViewController(forPage: locationIndex)], direction: .forward, animated: false, completion: nil)
-    }
     
-    @IBAction func pageControllTapped(_ sender: UIPageControl) {
-        let pageViewController = UIApplication.shared.windows.first!.rootViewController as! PageViewController
-        
-        var direction: UIPageViewController.NavigationDirection = .forward
-        if sender.currentPage < locationIndex {
-            direction = .reverse
+    //MARK: Private methods
+    private func updateSelectedLocationWithCoordinate(_ coordinate: CLLocationCoordinate2D) {
+        guard let pageViewController = UIApplication.shared.windows.first!.rootViewController as? PageViewController else {
+            return
         }
-        
-        pageViewController.setViewControllers([pageViewController.createLocationDetailViewController(forPage: sender.currentPage)], direction: direction, animated: true, completion: nil)
-        
+        // Update the selected location with the new coordinate
+        let selectedLocation = pageViewController.weatherLocations[locationIndex]
+        selectedLocation.latitude = coordinate.latitude
+        selectedLocation.longitude = coordinate.longitude
+        // Call requestWeatherForLocation() to fetch weather for the updated coordinate
+        // and update the UI accordingly
+        requestWeatherForLocation()
+        // Dismiss the LocationSelectionViewController
+        dismiss(animated: true, completion: nil)
     }
     
-    func requestWeatherForLocation() {
+    private func requestWeatherForLocation() {
         
         guard let pageViewController = pageController else {
             assertionFailure("Page controller needed")
@@ -91,21 +99,17 @@ class LocationDetailViewController: UIViewController {
             
         }
         let weatherLocation = pageViewController.weatherLocations[locationIndex]
-        weatherService = WeatherService(name: weatherLocation.name, tempC: weatherLocation.tempC, locationTime: weatherLocation.locationTime, latitude: weatherLocation.latitude, longitude: weatherLocation.longitude)
+        weatherService = WeatherService(name: weatherLocation.name, tempC: weatherLocation.tempC, locationTime:weatherLocation.locationTime, latitude: weatherLocation.latitude, longitude: weatherLocation.longitude)
         
-        pageControl.numberOfPages = pageViewController.weatherLocations.count
-        pageControl.currentPage = locationIndex
-        
-        
-        weatherService.getData {
-            completed in
+        weatherService.getData { [weak self] completed in
+            guard let self = self else { return }
             DispatchQueue.main.async {
-                dateFormatter.timeZone = TimeZone(identifier: self.weatherService.timezone)
+                self.appTool.dateFormatter.timeZone = TimeZone(identifier: self.weatherService.timezone)
                 let usableDate = Date(timeIntervalSince1970: self.weatherService.currentTime)
-                self.timeAndDataLabel.text = dateFormatter.string(from: usableDate)
+                self.timeAndDataLabel.text = self.appTool.dateFormatter.string(from: usableDate)
                 self.conditionLabel.text = self.weatherService.description
                 self.temperatureLabel.text = self.weatherService.temperature.description + "°"
-                self.cityLable.text = self.weatherService.name
+                self.cityLable.text = self.weatherService.locationName
                 self.table.reloadData()
                 self.scrollViewTable.reloadData()
                 guard let weatherS = self.weatherService.dailyWeatherData.first else { return }
@@ -132,9 +136,33 @@ class LocationDetailViewController: UIViewController {
             }
         }
     }
+
+    //MARK: @IBActions
+    @IBAction func unwindFromOpenWeatherController (segue: UIStoryboardSegue) {
+        let source = segue.source as! OpenWeatherController
+        locationIndex = source.selectedLocationIndex
+        
+        let pageViewController = UIApplication.shared.windows.first!.rootViewController as! PageViewController
+        
+        pageViewController.weatherLocations = source.weatherLocations
+        pageViewController.setViewControllers([pageViewController.createLocationDetailViewController(forPage: locationIndex)], direction: .forward, animated: false, completion: nil)
+    }
+    
+    @IBAction func pageControllTapped(_ sender: UIPageControl) {
+        let pageViewController = UIApplication.shared.windows.first!.rootViewController as! PageViewController
+        
+        var direction: UIPageViewController.NavigationDirection = .forward
+        if sender.currentPage < locationIndex {
+            direction = .reverse
+        }
+        
+        pageViewController.setViewControllers([pageViewController.createLocationDetailViewController(forPage: sender.currentPage)], direction: direction, animated: true, completion: nil)
+        
+    }
 }
-extension LocationDetailViewController: UITableViewDataSource, UITableViewDelegate{
-    //MARK: create table for daily weatherForecast
+
+//MARK: UITableViewDataSource, UITableViewDelegate
+extension LocationDetailViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return weatherService.dailyWeatherData.count
     }
@@ -149,8 +177,9 @@ extension LocationDetailViewController: UITableViewDataSource, UITableViewDelega
         return 80
     }
 }
-extension LocationDetailViewController: UICollectionViewDelegate, UICollectionViewDataSource{
-    //MARK: create table for daily weatherForecast
+
+//MARK:  UICollectionViewDelegate, UICollectionViewDataSource
+extension LocationDetailViewController: UICollectionViewDelegate, UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return weatherService.hourlyWeatherData.count
         
@@ -162,6 +191,8 @@ extension LocationDetailViewController: UICollectionViewDelegate, UICollectionVi
         return hourlyCell
     }
 }
+
+//MARK: CLLocationManagerDelegate
 extension LocationDetailViewController: CLLocationManagerDelegate {
     
     func getLocation() {
@@ -170,7 +201,7 @@ extension LocationDetailViewController: CLLocationManagerDelegate {
     }
     
     func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
-        print("👮👮 Cheking Authentication Status")
+        print("Cheking Authentication Status")
         handleAuthenticalStatus(status: status)
     }
     
@@ -210,7 +241,7 @@ extension LocationDetailViewController: CLLocationManagerDelegate {
     
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         let currentLocation = locations.last ?? CLLocation()
-        print ("🗺 Updating location is \(currentLocation.coordinate.latitude), \(currentLocation.coordinate.longitude)")
+        print ("pdating location is \(currentLocation.coordinate.latitude), \(currentLocation.coordinate.longitude)")
         let geocoder = CLGeocoder()
         geocoder.reverseGeocodeLocation(currentLocation) { (placemarks, error) in
             var locationName = ""
@@ -238,3 +269,9 @@ extension LocationDetailViewController: CLLocationManagerDelegate {
     
 }
 
+//MARK: LocationSelectionDelegate
+extension LocationDetailViewController: LocationSelectionDelegate {
+    func didSelectLocation(coordinate: CLLocationCoordinate2D) {
+        updateSelectedLocationWithCoordinate(coordinate)
+    }
+}

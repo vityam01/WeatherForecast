@@ -2,7 +2,7 @@
 //  WeatherLocation.swift
 //  WeatherForecast
 //
-//  Created by Elena on 27.01.2021.
+//  Created by Vitya Mandryk on 01.09.2023.
 //
 
 import Foundation

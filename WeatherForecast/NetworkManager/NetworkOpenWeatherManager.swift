@@ -2,7 +2,7 @@
 //  NetworkOpenWeatherManager.swift
 //  WeatherForecast
 //
-//  Created by Elena on 29.01.2021.
+//  Created by Vitya Mandryk on 01.09.2023.
 //
 
 import Foundation
@@ -14,8 +14,6 @@ class NetworkOpenWeatherManager {
     static let shared:NetworkOpenWeatherManager = NetworkOpenWeatherManager()
     
     func getWeather2(city: String, lat:Double, lon:Double, result: @escaping ((OneCallModel?) -> ())) {
-        
-        //    print(city)
         var urlComponents = URLComponents()
         urlComponents.scheme = "https"
         urlComponents.host = "api.openweathermap.org"
@@ -23,7 +21,7 @@ class NetworkOpenWeatherManager {
         urlComponents.queryItems = [URLQueryItem(name: "lat", value: "\(lat)"),
                                     URLQueryItem(name: "lon", value: "\(lon)"),
                                     URLQueryItem(name: "units", value: "metric"),
-                                    URLQueryItem(name: "appid", value: "\(APIKeys.openWeatherKeyLena)")]
+                                    URLQueryItem(name: "appid", value: "\(APIKeys.openWeatherKey)")]
         
         guard urlComponents.url != nil else { return }
         //      print(urlComponents.url)
